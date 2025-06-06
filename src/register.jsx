@@ -25,19 +25,20 @@ export default function Register({ onRegisterSuccess, onSwitchToLogin }) {
     const auth = getAuth();
 
     try {
+      // Creează user în Firebase Authentication
       const res = await createUserWithEmailAndPassword(auth, email, password);
       const emailLower = res.user.email.toLowerCase();
 
       const role = 'client';
 
-      // Mapare simplă machine_id (poți adapta)
+      // Mapare simplă machine_id (poți adapta după nevoie)
       const machineIdMap = {
         'client@example.com': '171728318016306',
         'anotherclient@example.com': '1234567890',
       };
       const machine_id = machineIdMap[emailLower] || null;
 
-      // Apelează backend să salveze și în Firestore
+      // Trimite datele la backend pentru a salva în Firestore
       const backendRes = await fetch(ENDPOINTS.REGISTER, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

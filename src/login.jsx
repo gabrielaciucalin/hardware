@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'; 
 import { getAuth, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { Box, TextField, Button, Typography } from '@mui/material';
 import { ENDPOINTS } from './config';
@@ -11,15 +11,23 @@ export default function Login({ user, onLogin, onLogout }) {
   const handleLogin = async () => {
     setError('');
     const auth = getAuth();
+
     try {
+      // 1. Login Firebase
       const res = await signInWithEmailAndPassword(auth, email, password);
       const emailLower = res.user.email.toLowerCase();
 
-      // Apelează backend să obțină role și machine_id
+      // 2. Obține tokenul JWT Firebase
+      const token = await res.user.getIdToken();
+
+      // 3. Trimite tokenul backend-ului în header Authorization
       const backendRes = await fetch(ENDPOINTS.LOGIN, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailLower, password }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ email: emailLower }) // poți trimite și alte date dacă vrei
       });
 
       const data = await backendRes.json();
@@ -28,8 +36,10 @@ export default function Login({ user, onLogin, onLogout }) {
         throw new Error(data.error || 'Eroare la autentificare backend');
       }
 
+      // 4. Apelează onLogin cu datele primite
       const { role, machine_id } = data;
       onLogin({ email: emailLower, role, machine_id });
+
     } catch (err) {
       console.error(err);
       setError('Autentificare eșuată. Verifică datele introduse.');

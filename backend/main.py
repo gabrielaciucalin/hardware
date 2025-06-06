@@ -8,8 +8,6 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app, origins=["https://hardware-app-70d57.web.app", "https://hardware-app-70d57.firebaseapp.com"])
 
-
-
 cred = credentials.Certificate('serviceAccountKey.json')
 firebase_admin.initialize_app(cred)
 db = firestore.client()
@@ -18,10 +16,10 @@ db = firestore.client()
 def save_hardware_data():
     data = request.json
     machine_id = data.get('machine_id')
-    
+
     if not machine_id:
         return jsonify({'error': 'machine_id is required'}), 400
-    
+
     db.collection('hardware').document(machine_id).set(data)
     return jsonify({'status': 'saved'}), 200
 
@@ -46,7 +44,6 @@ def get_hardware_detail(machine_id):
     else:
         return jsonify({'error': 'Machine not found'}), 404
 
-
 @app.route('/api/register', methods=['POST'])
 def register_user():
     data = request.json
@@ -70,38 +67,41 @@ def register_user():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-
 @app.route('/api/login', methods=['POST'])
 def login_user():
-    data = request.json
-    email = data.get('email')
-    password = data.get('password')
+    auth_header = request.headers.get('Authorization', None)
+    if not auth_header:
+        return jsonify({'error': 'Missing Authorization header'}), 401
 
-    # Atenție: Firebase Authentication nu oferă endpoint direct de login
-    # în admin SDK; pentru login folosește clientul Firebase din frontend.
-    # Totuși, aici poți verifica existența userului și returna rolul.
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != 'bearer':
+        return jsonify({'error': 'Invalid Authorization header format'}), 401
+
+    token = parts[1]
 
     try:
-        # Caută user după email
-        users_ref = db.collection('users').where('email', '==', email).stream()
-        user_doc = next(users_ref, None)
-        if user_doc is None:
-            return jsonify({'error': 'Utilizator inexistent'}), 404
+        # Verifică tokenul JWT primit de la frontend
+        decoded_token = auth.verify_id_token(token)
+        uid = decoded_token['uid']
+
+        # Ia datele utilizatorului din Firestore după uid
+        user_doc = db.collection('users').document(uid).get()
+        if not user_doc.exists:
+            return jsonify({'error': 'User not found'}), 404
+
         user_data = user_doc.to_dict()
 
-        # Parola trebuie verificată pe client (frontend) cu Firebase Auth,
-        # deci aici doar returnezi rolul și machine_id
+        # Returnează datele utile
         return jsonify({
-            'email': email,
+            'email': user_data.get('email'),
             'role': user_data.get('role'),
             'machine_id': user_data.get('machine_id')
         })
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-
+        # Dacă tokenul nu e valid sau altă eroare
+        return jsonify({'error': str(e)}), 401
 
 if __name__ == '__main__':
-     port = int(os.environ.get('PORT', 5000)) 
-     app.run(host='0.0.0.0', port=port, debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)

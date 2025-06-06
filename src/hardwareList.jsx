@@ -10,7 +10,7 @@ const HardwareList = () => {
   const [hardwareData, setHardwareData] = useState([]);
 
   useEffect(() => {
-    fetch("http://192.168.56.1:5173/api/hardware")
+    fetch('https://hardware-backend-1045498097455.europe-central2.run.app/api/hardware')
       .then((res) => res.json())
       .then((data) => setHardwareData(data))
       .catch((err) => console.error("Error fetching hardware data:", err));

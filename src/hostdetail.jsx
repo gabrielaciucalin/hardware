@@ -11,7 +11,7 @@ export default function HostDetail({ user }) {
     console.log('User:', user);
 
     if (user.role === 'admin') {
-      fetch('http://192.168.56.1:5000/api/hardware/details')
+      fetch('https://hardware-backend-1045498097455.europe-central2.run.app/api/hardware')
         .then(res => {
           console.log('Admin fetch response status:', res.status);
           if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -36,7 +36,7 @@ export default function HostDetail({ user }) {
     } else {
       // client non-admin
       if (user.machine_id) {
-        fetch(`http://192.168.56.1:5000/api/hardware/details/${user.machine_id}`)
+        fetch(`'https://hardware-backend-1045498097455.europe-central2.run.app/api/hardware'${user.machine_id}`)
           .then(res => {
             console.log('Client fetch response status:', res.status);
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
